@@ -29,21 +29,30 @@ apps:
       QT_QPA_PLATFORM: xcb
 
 parts:
-  # --- Parte responsável pelo versionamento automático ---
   meta:
     plugin: nil
     source: ..
+    build-packages:
+      - git
     override-pull: |
       set -eux
-      # Garante que as tags estão disponíveis (no Launchpad costuma estar, mas por via das dúvidas):
-      git fetch --tags || true
 
-      # Tenta obter versão a partir de tags; ex.: v1.2.3-4-gABCDEF[-dirty]
-      ver="$(git describe --tags --dirty --always || true)"
+      # Só tenta usar git se houver repositório
+      if [ -d ".git" ] && command -v git >/dev/null 2>&1; then
+        git fetch --tags || true
+        ver="$(git describe --tags --always 2>/dev/null || true)"
+      else
+        ver=""
+      fi
 
-      # Fallback para quando não há tags: YYYY.MM.DD-g<sha>
-      if [ -z "$ver" ]; then
-        ver="$(date -u +%Y.%m.%d)-g$(git rev-parse --short HEAD)"
+      # Fallback limpo (sem sufixo "-g" vazio)
+      if [ -z "${ver:-}" ]; then
+        ver="$(date -u +%Y.%m.%d)"
+        # tenta adicionar hash curto se existir git e repo
+        if command -v git >/dev/null 2>&1 && [ -d ".git" ]; then
+          sha="$(git rev-parse --short HEAD 2>/dev/null || true)"
+          [ -n "$sha" ] && ver="${ver}-g${sha}"
+        fi
       fi
 
       craftctl set version="$ver"
