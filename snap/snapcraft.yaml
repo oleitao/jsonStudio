@@ -61,6 +61,8 @@ parts:
   jsonstudio:
     plugin: python
     source: ..
+    build-packages:
+      - rsync
     stage-packages:
       - python3
       - python3-pyqt5
@@ -82,25 +84,35 @@ parts:
       - libxcb-shm0
       - libxcb-xfixes0
       - libxcb-icccm4
+
     override-build: |
       set -eux
       craftctl default
 
-      # Instala o launcher
+      # Launcher
       install -D -m 0755 /dev/stdin "$CRAFT_PART_INSTALL/bin/jsonstudio" <<'EOF'
       #!/bin/sh
       export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
-      PYBIN="$SNAP/venv/bin/python3"
-      [ -x "$PYBIN" ] || PYBIN="/usr/bin/python3"
+      PYBIN="$SNAP/venv/bin/python3"; [ -x "$PYBIN" ] || PYBIN="/usr/bin/python3"
       cd "$SNAP/app"
       exec "$PYBIN" main.py "$@"
       EOF
 
-      # Copia o código da app (na raiz do repo)
+      # Copiar apenas o código da app (excluindo lixo de build/CI)
       mkdir -p "$CRAFT_PART_INSTALL/app"
-      cp -a "$CRAFT_PART_SRC"/. "$CRAFT_PART_INSTALL/app/"
+      rsync -a --delete \
+        --exclude="/.git" \
+        --exclude="/.github" \
+        --exclude="/.cache" \
+        --exclude="/parts" \
+        --exclude="/prime" \
+        --exclude="/stage" \
+        --exclude="/*.snap" \
+        --exclude="/snap" \
+        "$CRAFT_PART_SRC"/ \
+        "$CRAFT_PART_INSTALL/app/"
 
-      # Copia .desktop e ícones para os locais esperados pelos snaps
+      # .desktop e ícones (mantém)
       if [ -d "$CRAFT_PART_SRC/snap/gui" ]; then
         mkdir -p "$CRAFT_PART_INSTALL/snap/gui" "$CRAFT_PART_INSTALL/meta/gui"
         cp -a "$CRAFT_PART_SRC/snap/gui/." "$CRAFT_PART_INSTALL/snap/gui/"
