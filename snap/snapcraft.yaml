@@ -9,13 +9,10 @@ description: |
 grade: stable
 confinement: strict
 
-# Target platforms for core24
 platforms:
   amd64:
-    # Build the amd64 snap on either amd64 or arm64 builders
     build-on: [amd64, arm64]
   arm64:
-    # Build the arm64 snap on an arm64 builder
     build-on: [arm64]
 
 apps:
@@ -29,12 +26,15 @@ apps:
       - home
       - audio-playback
     environment:
+      # Força X11 por omissão (Wayland se disponível)
       QT_QPA_PLATFORM: xcb
 
 parts:
   jsonstudio:
-    plugin: nil
+    plugin: python
     source: ..
+    # Se quiseres instalar libs via pip, ativa "python-packages".
+    # Ex.: python-packages: [ "jsonschema" ]
     stage-packages:
       - python3
       - python3-pyqt5
@@ -58,19 +58,25 @@ parts:
       - libxcb-icccm4
     override-build: |
       set -eux
-      # Install launcher
+      # Executa o comportamento padrão do plugin (cria venv, instala pip packages, se houver)
+      craftctl default
+
+      # Instala o launcher da app
       install -D -m 0755 /dev/stdin "$CRAFT_PART_INSTALL/bin/jsonstudio" <<'EOF'
       #!/bin/sh
-      export QT_QPA_PLATFORM=${QT_QPA_PLATFORM:-xcb}
-      cd "$SNAP/TODO/tools/jsonStudio"
-      exec /usr/bin/python3 main.py "$@"
+      export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
+      # Usa o Python do plugin (venv) se existir; caso contrário, usa o do sistema.
+      PYBIN="$SNAP/venv/bin/python3"
+      [ -x "$PYBIN" ] || PYBIN="/usr/bin/python3"
+      cd "$SNAP/app"
+      exec "$PYBIN" main.py "$@"
       EOF
 
-      # Copy application sources into the snap
-      mkdir -p "$CRAFT_PART_INSTALL/TODO/tools/jsonStudio"
-      cp -a "$CRAFT_PART_SRC"/. "$CRAFT_PART_INSTALL/TODO/tools/jsonStudio/"
+      # Copia o código-fonte (a app está na raiz do repositório)
+      mkdir -p "$CRAFT_PART_INSTALL/app"
+      cp -a "$CRAFT_PART_SRC"/. "$CRAFT_PART_INSTALL/app/"
 
-      # Ensure desktop entry and icons are available during prime/pack
+      # Garante que o .desktop e ícones entram no snap
       if [ -d "$CRAFT_PART_SRC/snap/gui" ]; then
         mkdir -p "$CRAFT_PART_INSTALL/snap/gui" "$CRAFT_PART_INSTALL/meta/gui"
         cp -a "$CRAFT_PART_SRC/snap/gui/." "$CRAFT_PART_INSTALL/snap/gui/"

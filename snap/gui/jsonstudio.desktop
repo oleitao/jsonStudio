@@ -1,9 +1,10 @@
 [Desktop Entry]
 Type=Application
 Name=jsonStudio
-Comment=Editor/validador de JSON em Qt
-Exec=jsonstudio
+Comment=JSON editor and viewer (Qt)
+Exec=jsonstudio %F
 Icon=${SNAP}/meta/gui/logo.png
 Terminal=false
-Categories=Utility;Development;
-Keywords=JSON;Editor;Viewer;Schema;
+Categories=Development;Utility;
+Keywords=JSON;Editor;Viewer;Validation;Qt;
+StartupNotify=true
