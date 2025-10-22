@@ -1,6 +1,6 @@
 name: jsonstudio
 base: core24
-version: '0.1'
+adopt-info: meta                      # <- versão vem deste "part"
 summary: JSON editor and viewer (Qt)
 description: |
   jsonStudio is a simple JSON editor/viewer built with Qt and Python.
@@ -26,15 +26,32 @@ apps:
       - home
       - audio-playback
     environment:
-      # Força X11 por omissão (Wayland se disponível)
       QT_QPA_PLATFORM: xcb
 
 parts:
+  # --- Parte responsável pelo versionamento automático ---
+  meta:
+    plugin: nil
+    source: ..
+    override-pull: |
+      set -eux
+      # Garante que as tags estão disponíveis (no Launchpad costuma estar, mas por via das dúvidas):
+      git fetch --tags || true
+
+      # Tenta obter versão a partir de tags; ex.: v1.2.3-4-gABCDEF[-dirty]
+      ver="$(git describe --tags --dirty --always || true)"
+
+      # Fallback para quando não há tags: YYYY.MM.DD-g<sha>
+      if [ -z "$ver" ]; then
+        ver="$(date -u +%Y.%m.%d)-g$(git rev-parse --short HEAD)"
+      fi
+
+      craftctl set version="$ver"
+
+  # --- A aplicação em si (PyQt) ---
   jsonstudio:
     plugin: python
     source: ..
-    # Se quiseres instalar libs via pip, ativa "python-packages".
-    # Ex.: python-packages: [ "jsonschema" ]
     stage-packages:
       - python3
       - python3-pyqt5
@@ -58,25 +75,23 @@ parts:
       - libxcb-icccm4
     override-build: |
       set -eux
-      # Executa o comportamento padrão do plugin (cria venv, instala pip packages, se houver)
       craftctl default
 
-      # Instala o launcher da app
+      # Instala o launcher
       install -D -m 0755 /dev/stdin "$CRAFT_PART_INSTALL/bin/jsonstudio" <<'EOF'
       #!/bin/sh
       export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
-      # Usa o Python do plugin (venv) se existir; caso contrário, usa o do sistema.
       PYBIN="$SNAP/venv/bin/python3"
       [ -x "$PYBIN" ] || PYBIN="/usr/bin/python3"
       cd "$SNAP/app"
       exec "$PYBIN" main.py "$@"
       EOF
 
-      # Copia o código-fonte (a app está na raiz do repositório)
+      # Copia o código da app (na raiz do repo)
       mkdir -p "$CRAFT_PART_INSTALL/app"
       cp -a "$CRAFT_PART_SRC"/. "$CRAFT_PART_INSTALL/app/"
 
-      # Garante que o .desktop e ícones entram no snap
+      # Copia .desktop e ícones para os locais esperados pelos snaps
       if [ -d "$CRAFT_PART_SRC/snap/gui" ]; then
         mkdir -p "$CRAFT_PART_INSTALL/snap/gui" "$CRAFT_PART_INSTALL/meta/gui"
         cp -a "$CRAFT_PART_SRC/snap/gui/." "$CRAFT_PART_INSTALL/snap/gui/"
