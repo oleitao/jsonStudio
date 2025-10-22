@@ -1,0 +1,25 @@
+name: Build & Publish Snap
+
+on:
+  push:
+    branches: [ "main" ]          # muda se usares outra branch
+    paths:
+      - "snap/**"
+      - "**/*.py"
+      - ".github/workflows/snap.yml"
+  workflow_dispatch: {}            # permite correr manualmente
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Compila o snap (usa LXD + snapcraft)
+      - uses: snapcore/action-build@v1
+        id: build
+      # Publica na Snap Store (canal edge)
+      - uses: snapcore/action-publish@v1
+        with:
+          store_login: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+          snap: ${{ steps.build.outputs.snap }}
+          release: edge
