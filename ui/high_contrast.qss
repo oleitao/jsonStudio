@@ -1,0 +1,8 @@
+QWidget { background: #000000; color: #ffffff; }
+QLineEdit, QPlainTextEdit, QTreeView { background: #000000; color: #00ff00; selection-background-color: #444444; }
+QHeaderView::section { background: #000000; color: #ffffff; border: 1px solid #ffffff; }
+QPushButton { background: #111111; color: #ffffff; border: 1px solid #ffffff; padding: 4px 8px; }
+QPushButton:hover { background: #222222; }
+QPushButton:pressed { background: #000000; }
+QMenuBar, QMenu { background: #000000; color: #ffffff; }
+QMenu::item:selected { background: #444444; }

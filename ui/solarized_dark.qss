@@ -1,0 +1,9 @@
+QWidget { background: #002b36; color: #93a1a1; }
+QLineEdit, QPlainTextEdit, QTreeView { background: #073642; color: #eee8d5; selection-background-color: #268bd2; }
+QHeaderView::section { background: #073642; color: #93a1a1; border: 1px solid #586e75; }
+QPushButton { background: #586e75; color: #fdf6e3; border: 1px solid #657b83; padding: 4px 8px; }
+QPushButton:hover { background: #657b83; }
+QPushButton:pressed { background: #465a61; }
+QMenuBar { background: #002b36; color: #93a1a1; }
+QMenu { background: #073642; color: #93a1a1; }
+QMenu::item:selected { background: #268bd2; }
