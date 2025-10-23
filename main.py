@@ -16,6 +16,10 @@ from qjsonview import QJsonView
 from qjsonmodel import QJsonModel
 from codeEditor.highlighter.jsonHighlight import JsonHighlighter
 from optionsDialog import OptionsDialog
+try:
+    from Qt import QtPrintSupport
+except Exception:  # pragma: no cover
+    QtPrintSupport = None
 
 try:
     import jsonschema
@@ -269,21 +273,38 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # File menu
         file_menu = menubar.addMenu('File')
-        load_json_action = QtWidgets.QAction('Load JSON…', self)
+
+        new_action = QtWidgets.QAction('New File...', self)
         try:
-            load_json_action.setShortcut(QtGui.QKeySequence.Open)
+            new_action.setShortcut(QtGui.QKeySequence.New)
         except Exception:
             pass
-        load_json_action.triggered.connect(self.loadJsonToRaw)
-        file_menu.addAction(load_json_action)
+        new_action.triggered.connect(self.newFile)
+        file_menu.addAction(new_action)
 
-        options_action = QtWidgets.QAction('Options…', self)
+        open_action = QtWidgets.QAction('Open...', self)
+        try:
+            open_action.setShortcut(QtGui.QKeySequence.Open)
+        except Exception:
+            pass
+        open_action.triggered.connect(self.loadJsonToRaw)
+        file_menu.addAction(open_action)
+
+        options_action = QtWidgets.QAction('Options', self)
         try:
             options_action.setShortcut(QtGui.QKeySequence.Preferences)
         except Exception:
             pass
         options_action.triggered.connect(self.showOptions)
         file_menu.addAction(options_action)
+
+        print_action = QtWidgets.QAction('Print...', self)
+        try:
+            print_action.setShortcut(QtGui.QKeySequence.Print)
+        except Exception:
+            pass
+        print_action.triggered.connect(self.printCurrent)
+        file_menu.addAction(print_action)
 
         exit_action = QtWidgets.QAction('Exit', self)
         try:
@@ -399,6 +420,32 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._options_dialog.activateWindow()
             except Exception:
                 pass
+
+    def newFile(self):
+        """Start a new (empty) JSON document by clearing views and schema."""
+        self.clearAll()
+
+    def printCurrent(self):
+        """Print Raw View contents; if empty, print current tree as JSON."""
+        if QtPrintSupport is None:
+            QtWidgets.QMessageBox.warning(self, 'Print Not Available', 'QtPrintSupport is not available in this environment.')
+            return
+        printer = QtPrintSupport.QPrinter()
+        dialog = QtPrintSupport.QPrintDialog(printer, self)
+        if dialog.exec_() != QtWidgets.QDialog.Accepted:
+            return
+        text = self.ui_view_edit.toPlainText().strip()
+        if not text:
+            try:
+                data = self.ui_tree_view.asDict(None)
+                text = json.dumps(data, indent=4, sort_keys=True)
+            except Exception:
+                text = ''
+        doc = QtGui.QTextDocument(text)
+        try:
+            doc.print_(printer)
+        except Exception:
+            QtWidgets.QMessageBox.critical(self, 'Print Error', 'Failed to print the document.')
 
     def _styles_in_ui(self):
         styles = {}
