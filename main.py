@@ -259,6 +259,16 @@ class MainWindow(QtWidgets.QMainWindow):
         if not menubar:
             return
 
+        # File menu
+        file_menu = menubar.addMenu('File')
+        load_json_action = QtWidgets.QAction('Load JSON…', self)
+        try:
+            load_json_action.setShortcut(QtGui.QKeySequence.Open)
+        except Exception:
+            pass
+        load_json_action.triggered.connect(self.loadJsonToRaw)
+        file_menu.addAction(load_json_action)
+
         style_menu = menubar.addMenu('Style')
         themes_menu = style_menu.addMenu('Themes')
 

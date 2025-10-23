@@ -87,20 +87,7 @@
       </layout>
      </item>
      <item row="2" column="0" colspan="3">
-      <layout class="QHBoxLayout" name="ui_schema_layout">
-       <item>
-        <widget class="QPushButton" name="ui_load_json_btn">
-         <property name="font">
-          <font>
-           <family>Bahnschrift</family>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>Load JSON…</string>
-         </property>
-        </widget>
-       </item>
+     <layout class="QHBoxLayout" name="ui_schema_layout">
        <item>
        <widget class="QPushButton" name="ui_validate_btn">
          <property name="font">
