@@ -34,12 +34,19 @@ MODULE_PATH = os.path.dirname(os.path.abspath(__file__))
 UI_PATH = os.path.join(MODULE_PATH, 'ui', 'jsonStudio.ui')
 TEST_DICT = {}
 STYLE_PREF_PATH = os.path.join(MODULE_PATH, 'ui', 'settings.json')
+ICON_PATH = os.path.join(MODULE_PATH, 'snap', 'gui', 'logo.png')
 
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         _loadUi(UI_PATH, self)
+        # Set window icon if available
+        try:
+            if os.path.exists(ICON_PATH):
+                self.setWindowIcon(QtGui.QIcon(ICON_PATH))
+        except Exception:
+            pass
 
         self.ui_tree_view = QJsonView()
         self.ui_tree_view.setStyleSheet('QWidget{font: 10pt "Bahnschrift";}')
@@ -415,6 +422,12 @@ class MainWindow(QtWidgets.QMainWindow):
 def show():
     global window
     app = QtWidgets.QApplication(sys.argv)
+    # Set application icon (taskbar/dock)
+    try:
+        if os.path.exists(ICON_PATH):
+            app.setWindowIcon(QtGui.QIcon(ICON_PATH))
+    except Exception:
+        pass
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
