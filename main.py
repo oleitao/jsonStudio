@@ -344,6 +344,83 @@ class MainWindow(QtWidgets.QMainWindow):
         reset_style_action.triggered.connect(self.resetStyle)
         style_menu.addAction(reset_style_action)
 
+        # Edit menu (after Style)
+        edit_menu = menubar.addMenu('Edit')
+
+        redo_action = QtWidgets.QAction('Redo', self)
+        try:
+            redo_action.setShortcut(QtGui.QKeySequence.Redo)
+        except Exception:
+            pass
+        redo_action.triggered.connect(self.editRedo)
+        edit_menu.addAction(redo_action)
+
+        undo_action = QtWidgets.QAction('Undo', self)
+        try:
+            undo_action.setShortcut(QtGui.QKeySequence.Undo)
+        except Exception:
+            pass
+        undo_action.triggered.connect(self.editUndo)
+        edit_menu.addAction(undo_action)
+
+        edit_menu.addSeparator()
+
+        cut_action = QtWidgets.QAction('Cut', self)
+        try:
+            cut_action.setShortcut(QtGui.QKeySequence.Cut)
+        except Exception:
+            pass
+        cut_action.triggered.connect(self.editCut)
+        edit_menu.addAction(cut_action)
+
+        copy_action = QtWidgets.QAction('Copy', self)
+        try:
+            copy_action.setShortcut(QtGui.QKeySequence.Copy)
+        except Exception:
+            pass
+        copy_action.triggered.connect(self.editCopy)
+        edit_menu.addAction(copy_action)
+
+        paste_action = QtWidgets.QAction('Paste', self)
+        try:
+            paste_action.setShortcut(QtGui.QKeySequence.Paste)
+        except Exception:
+            pass
+        paste_action.triggered.connect(self.editPaste)
+        edit_menu.addAction(paste_action)
+
+        edit_menu.addSeparator()
+
+        find_action = QtWidgets.QAction('Find', self)
+        try:
+            find_action.setShortcut(QtGui.QKeySequence.Find)
+        except Exception:
+            pass
+        find_action.triggered.connect(self.editFind)
+        edit_menu.addAction(find_action)
+
+        replace_action = QtWidgets.QAction('Replace', self)
+        try:
+            replace_action.setShortcut(QtGui.QKeySequence.Replace)
+        except Exception:
+            pass
+        replace_action.triggered.connect(self.editReplace)
+        edit_menu.addAction(replace_action)
+
+        edit_menu.addSeparator()
+
+        toggle_line_comment_action = QtWidgets.QAction('Toggle Line Comment', self)
+        try:
+            toggle_line_comment_action.setShortcut(QtGui.QKeySequence('Ctrl+/'))
+        except Exception:
+            pass
+        toggle_line_comment_action.triggered.connect(self.toggleLineComment)
+        edit_menu.addAction(toggle_line_comment_action)
+
+        toggle_block_comment_action = QtWidgets.QAction('Toggle Block Comment', self)
+        toggle_block_comment_action.triggered.connect(self.toggleBlockComment)
+        edit_menu.addAction(toggle_block_comment_action)
+
     def applyStyleFile(self, path, display_name=None):
         try:
             with open(path, 'r', encoding='utf-8') as f:
@@ -446,6 +523,156 @@ class MainWindow(QtWidgets.QMainWindow):
             doc.print_(printer)
         except Exception:
             QtWidgets.QMessageBox.critical(self, 'Print Error', 'Failed to print the document.')
+
+    # Edit actions implementations
+    def _text_edit(self):
+        return getattr(self, 'ui_view_edit', None)
+
+    def editUndo(self):
+        w = self._text_edit()
+        if w is not None:
+            try:
+                w.undo()
+            except Exception:
+                pass
+
+    def editRedo(self):
+        w = self._text_edit()
+        if w is not None:
+            try:
+                w.redo()
+            except Exception:
+                pass
+
+    def editCut(self):
+        w = self._text_edit()
+        if w is not None:
+            try:
+                w.cut()
+            except Exception:
+                pass
+
+    def editCopy(self):
+        w = self._text_edit()
+        if w is not None:
+            try:
+                w.copy()
+            except Exception:
+                pass
+
+    def editPaste(self):
+        w = self._text_edit()
+        if w is not None:
+            try:
+                w.paste()
+            except Exception:
+                pass
+
+    def editFind(self):
+        w = self._text_edit()
+        if w is None:
+            return
+        text, ok = QtWidgets.QInputDialog.getText(self, 'Find', 'Find what:')
+        if not ok or not text:
+            return
+        try:
+            w.find(text)
+        except Exception:
+            pass
+
+    def editReplace(self):
+        w = self._text_edit()
+        if w is None:
+            return
+        find_text, ok = QtWidgets.QInputDialog.getText(self, 'Replace', 'Find:')
+        if not ok:
+            return
+        replace_text, ok2 = QtWidgets.QInputDialog.getText(self, 'Replace', 'Replace with:')
+        if not ok2:
+            return
+        try:
+            content = w.toPlainText()
+            content = content.replace(find_text, replace_text)
+            w.setPlainText(content)
+        except Exception:
+            pass
+
+    def toggleLineComment(self):
+        w = self._text_edit()
+        if w is None:
+            return
+        cursor = w.textCursor()
+        if not cursor.hasSelection():
+            cursor.select(QtGui.QTextCursor.LineUnderCursor)
+        start = cursor.selectionStart()
+        end = cursor.selectionEnd()
+        tc = QtGui.QTextCursor(w.document())
+        tc.setPosition(start)
+        # Iterate lines
+        block = w.document().findBlock(start)
+        last_block = w.document().findBlock(end)
+        # Determine if we should comment or uncomment (if all lines start with //)
+        all_commented = True
+        scan_block = block
+        while True:
+            text = scan_block.text().lstrip()
+            if not text.startswith('//'):
+                all_commented = False
+            if scan_block == last_block:
+                break
+            scan_block = scan_block.next()
+
+        w.blockSignals(True)
+        w.document().undoStack().beginMacro('Toggle Line Comment') if hasattr(w.document(), 'undoStack') else None
+        b = block
+        while True:
+            line_text = b.text()
+            leading_ws_len = len(line_text) - len(line_text.lstrip(' \t'))
+            leading = line_text[:leading_ws_len]
+            rest = line_text[leading_ws_len:]
+            if all_commented:
+                if rest.startswith('//'):
+                    new_line = leading + rest[2:]
+                else:
+                    new_line = line_text
+            else:
+                new_line = leading + '//' + rest
+            # replace the block text
+            c = QtGui.QTextCursor(b)
+            c.select(QtGui.QTextCursor.LineUnderCursor)
+            c.removeSelectedText()
+            c.insertText(new_line)
+            if b == last_block:
+                break
+            b = b.next()
+        if hasattr(w.document(), 'undoStack'):
+            try:
+                w.document().undoStack().endMacro()
+            except Exception:
+                pass
+        w.blockSignals(False)
+
+    def toggleBlockComment(self):
+        w = self._text_edit()
+        if w is None:
+            return
+        cursor = w.textCursor()
+        if not cursor.hasSelection():
+            return
+        sel_start = cursor.selectionStart()
+        sel_end = cursor.selectionEnd()
+        doc = w.document()
+        tc = QtGui.QTextCursor(doc)
+        tc.setPosition(sel_start)
+        tc.setPosition(sel_end, QtGui.QTextCursor.KeepAnchor)
+        selected_text = tc.selectedText()
+        # QTextCursor.selectedText replaces newlines with \u2029; convert back
+        selected_text = selected_text.replace('\u2029', '\n')
+        if selected_text.startswith('/*') and selected_text.endswith('*/'):
+            new_text = selected_text[2:-2]
+        else:
+            new_text = '/*' + selected_text + '*/'
+        tc.insertText(new_text)
 
     def _styles_in_ui(self):
         styles = {}
