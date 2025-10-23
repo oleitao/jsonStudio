@@ -461,7 +461,7 @@ def show():
             window.menuBar().setVisible(True)
     except Exception:
         pass
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec_())
 
 
