@@ -67,7 +67,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui_tree_view.setModel(self._proxyModel)
 
-        self.ui_filter_edit.textChanged.connect(self._proxyModel.setFilterRegExp)
         self.ui_out_btn.clicked.connect(self.updateBrowser)
         self.ui_update_btn.clicked.connect(self.updateModel)
         # schema related
