@@ -3,7 +3,7 @@ base: core24
 adopt-info: meta                      # <- versão vem deste "part"
 summary: JSON editor and viewer (Qt)
 description: |
-  jsonStudio is a simple JSON editor/viewer built with Qt and Python.
+  JsonStudio is a simple JSON editor/viewer built with Qt and Python.
   It supports viewing as a tree, validation, filtering and basic styling.
 
 grade: stable

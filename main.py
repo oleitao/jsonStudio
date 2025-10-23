@@ -15,6 +15,13 @@ from qjsonnode import QJsonNode
 from qjsonview import QJsonView
 from qjsonmodel import QJsonModel
 from codeEditor.highlighter.jsonHighlight import JsonHighlighter
+from optionsDialog import OptionsDialog
+from textEditDialog import TextEditDialog
+import platform
+try:
+    from Qt import QtPrintSupport
+except Exception:  # pragma: no cover
+    QtPrintSupport = None
 
 try:
     import jsonschema
@@ -31,7 +38,7 @@ except Exception:  # pragma: no cover
         raise SchemaError('jsonschema not available')
 
 MODULE_PATH = os.path.dirname(os.path.abspath(__file__))
-UI_PATH = os.path.join(MODULE_PATH, 'ui', 'jsonStudio.ui')
+UI_PATH = os.path.join(MODULE_PATH, 'ui', 'JsonStudio.ui')
 TEST_DICT = {}
 STYLE_PREF_PATH = os.path.join(MODULE_PATH, 'ui', 'settings.json')
 ICON_PATH = os.path.join(MODULE_PATH, 'snap', 'gui', 'logo.png')
@@ -59,6 +66,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._style_path = None
         self._current_builtin_style = 'Default'
         self._style_actions = []
+        # dialogs
+        self._options_dialog = None
 
         root = QJsonNode.load(TEST_DICT)
         self._model = QJsonModel(root, self)
@@ -74,7 +83,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui_tree_view.setModel(self._proxyModel)
 
-        self.ui_filter_edit.textChanged.connect(self._proxyModel.setFilterRegExp)
         self.ui_out_btn.clicked.connect(self.updateBrowser)
         self.ui_update_btn.clicked.connect(self.updateModel)
         # schema related
@@ -266,6 +274,54 @@ class MainWindow(QtWidgets.QMainWindow):
             menubar = None
         if not menubar:
             return
+        # Show menubar inside window (helpful on macOS)
+        try:
+            menubar.setNativeMenuBar(False)
+        except Exception:
+            pass
+
+        # File menu
+        file_menu = menubar.addMenu('File')
+
+        new_action = QtWidgets.QAction('New File...', self)
+        try:
+            new_action.setShortcut(QtGui.QKeySequence.New)
+        except Exception:
+            pass
+        new_action.triggered.connect(self.newFile)
+        file_menu.addAction(new_action)
+
+        open_action = QtWidgets.QAction('Open...', self)
+        try:
+            open_action.setShortcut(QtGui.QKeySequence.Open)
+        except Exception:
+            pass
+        open_action.triggered.connect(self.loadJsonToRaw)
+        file_menu.addAction(open_action)
+
+        options_action = QtWidgets.QAction('Options', self)
+        try:
+            options_action.setShortcut(QtGui.QKeySequence.Preferences)
+        except Exception:
+            pass
+        options_action.triggered.connect(self.showOptions)
+        file_menu.addAction(options_action)
+
+        print_action = QtWidgets.QAction('Print...', self)
+        try:
+            print_action.setShortcut(QtGui.QKeySequence.Print)
+        except Exception:
+            pass
+        print_action.triggered.connect(self.printCurrent)
+        file_menu.addAction(print_action)
+
+        exit_action = QtWidgets.QAction('Exit', self)
+        try:
+            exit_action.setShortcut(QtGui.QKeySequence.Quit)
+        except Exception:
+            pass
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
 
         style_menu = menubar.addMenu('Style')
         themes_menu = style_menu.addMenu('Themes')
@@ -296,6 +352,117 @@ class MainWindow(QtWidgets.QMainWindow):
         reset_style_action = QtWidgets.QAction('Reset', self)
         reset_style_action.triggered.connect(self.resetStyle)
         style_menu.addAction(reset_style_action)
+
+        # Edit menu (after Style)
+        edit_menu = menubar.addMenu('Edit')
+
+        redo_action = QtWidgets.QAction('Redo', self)
+        try:
+            redo_action.setShortcut(QtGui.QKeySequence.Redo)
+        except Exception:
+            pass
+        redo_action.triggered.connect(self.editRedo)
+        edit_menu.addAction(redo_action)
+
+        undo_action = QtWidgets.QAction('Undo', self)
+        try:
+            undo_action.setShortcut(QtGui.QKeySequence.Undo)
+        except Exception:
+            pass
+        undo_action.triggered.connect(self.editUndo)
+        edit_menu.addAction(undo_action)
+
+        edit_menu.addSeparator()
+
+        cut_action = QtWidgets.QAction('Cut', self)
+        try:
+            cut_action.setShortcut(QtGui.QKeySequence.Cut)
+        except Exception:
+            pass
+        cut_action.triggered.connect(self.editCut)
+        edit_menu.addAction(cut_action)
+
+        copy_action = QtWidgets.QAction('Copy', self)
+        try:
+            copy_action.setShortcut(QtGui.QKeySequence.Copy)
+        except Exception:
+            pass
+        copy_action.triggered.connect(self.editCopy)
+        edit_menu.addAction(copy_action)
+
+        paste_action = QtWidgets.QAction('Paste', self)
+        try:
+            paste_action.setShortcut(QtGui.QKeySequence.Paste)
+        except Exception:
+            pass
+        paste_action.triggered.connect(self.editPaste)
+        edit_menu.addAction(paste_action)
+
+        edit_menu.addSeparator()
+
+        find_action = QtWidgets.QAction('Find', self)
+        try:
+            find_action.setShortcut(QtGui.QKeySequence.Find)
+        except Exception:
+            pass
+        find_action.triggered.connect(self.editFind)
+        edit_menu.addAction(find_action)
+
+        replace_action = QtWidgets.QAction('Replace', self)
+        try:
+            replace_action.setShortcut(QtGui.QKeySequence.Replace)
+        except Exception:
+            pass
+        replace_action.triggered.connect(self.editReplace)
+        edit_menu.addAction(replace_action)
+
+        edit_menu.addSeparator()
+
+        toggle_line_comment_action = QtWidgets.QAction('Toggle Line Comment', self)
+        try:
+            toggle_line_comment_action.setShortcut(QtGui.QKeySequence('Ctrl+/'))
+        except Exception:
+            pass
+        toggle_line_comment_action.triggered.connect(self.toggleLineComment)
+        edit_menu.addAction(toggle_line_comment_action)
+
+        toggle_block_comment_action = QtWidgets.QAction('Toggle Block Comment', self)
+        toggle_block_comment_action.triggered.connect(self.toggleBlockComment)
+        edit_menu.addAction(toggle_block_comment_action)
+
+        # View menu (after Edit)
+        view_menu = menubar.addMenu('View')
+
+        hide_code_action = QtWidgets.QAction('Hide Json Code Editor', self)
+        hide_code_action.triggered.connect(self.hideJsonCodeEditor)
+        view_menu.addAction(hide_code_action)
+
+        hide_ui_action = QtWidgets.QAction('Hide Json UI Editor', self)
+        hide_ui_action.triggered.connect(self.hideJsonUiEditor)
+        view_menu.addAction(hide_ui_action)
+
+        show_both_action = QtWidgets.QAction('Show Json Code/UI Editors', self)
+        show_both_action.triggered.connect(self.showJsonEditors)
+        view_menu.addAction(show_both_action)
+
+        # Help menu (after View)
+        help_menu = menubar.addMenu('Help')
+
+        about_action = QtWidgets.QAction('About JsonStudio', self)
+        about_action.triggered.connect(self.showAbout)
+        help_menu.addAction(about_action)
+
+        version_notes_action = QtWidgets.QAction('Version Notes', self)
+        version_notes_action.triggered.connect(self.showVersionNotes)
+        help_menu.addAction(version_notes_action)
+
+        report_action = QtWidgets.QAction('Create Problem Report', self)
+        report_action.triggered.connect(self.createProblemReport)
+        help_menu.addAction(report_action)
+
+        site_action = QtWidgets.QAction('JsonStudio Site', self)
+        site_action.triggered.connect(self.openSite)
+        help_menu.addAction(site_action)
 
     def applyStyleFile(self, path, display_name=None):
         try:
@@ -360,6 +527,314 @@ class MainWindow(QtWidgets.QMainWindow):
         self._update_style_status_label('Default')
         self._save_style_selection({'kind': 'default'})
 
+    def showOptions(self):
+        if self._options_dialog is None:
+            try:
+                self._options_dialog = OptionsDialog(self)
+            except Exception:
+                self._options_dialog = None
+        if self._options_dialog is not None:
+            try:
+                self._options_dialog.show()
+                self._options_dialog.raise_()
+                self._options_dialog.activateWindow()
+            except Exception:
+                pass
+
+    def newFile(self):
+        """Start a new (empty) JSON document by clearing views and schema."""
+        self.clearAll()
+
+    def printCurrent(self):
+        """Print Raw View contents; if empty, print current tree as JSON."""
+        if QtPrintSupport is None:
+            QtWidgets.QMessageBox.warning(self, 'Print Not Available', 'QtPrintSupport is not available in this environment.')
+            return
+        printer = QtPrintSupport.QPrinter()
+        dialog = QtPrintSupport.QPrintDialog(printer, self)
+        if dialog.exec_() != QtWidgets.QDialog.Accepted:
+            return
+        text = self.ui_view_edit.toPlainText().strip()
+        if not text:
+            try:
+                data = self.ui_tree_view.asDict(None)
+                text = json.dumps(data, indent=4, sort_keys=True)
+            except Exception:
+                text = ''
+        doc = QtGui.QTextDocument(text)
+        try:
+            doc.print_(printer)
+        except Exception:
+            QtWidgets.QMessageBox.critical(self, 'Print Error', 'Failed to print the document.')
+
+    # Edit actions implementations
+    def _text_edit(self):
+        return getattr(self, 'ui_view_edit', None)
+
+    def editUndo(self):
+        w = self._text_edit()
+        if w is not None:
+            try:
+                w.undo()
+            except Exception:
+                pass
+
+    def editRedo(self):
+        w = self._text_edit()
+        if w is not None:
+            try:
+                w.redo()
+            except Exception:
+                pass
+
+    def editCut(self):
+        w = self._text_edit()
+        if w is not None:
+            try:
+                w.cut()
+            except Exception:
+                pass
+
+    def editCopy(self):
+        w = self._text_edit()
+        if w is not None:
+            try:
+                w.copy()
+            except Exception:
+                pass
+
+    def editPaste(self):
+        w = self._text_edit()
+        if w is not None:
+            try:
+                w.paste()
+            except Exception:
+                pass
+
+    def editFind(self):
+        w = self._text_edit()
+        if w is None:
+            return
+        text, ok = QtWidgets.QInputDialog.getText(self, 'Find', 'Find what:')
+        if not ok or not text:
+            return
+        try:
+            w.find(text)
+        except Exception:
+            pass
+
+    def editReplace(self):
+        w = self._text_edit()
+        if w is None:
+            return
+        find_text, ok = QtWidgets.QInputDialog.getText(self, 'Replace', 'Find:')
+        if not ok:
+            return
+        replace_text, ok2 = QtWidgets.QInputDialog.getText(self, 'Replace', 'Replace with:')
+        if not ok2:
+            return
+        try:
+            content = w.toPlainText()
+            content = content.replace(find_text, replace_text)
+            w.setPlainText(content)
+        except Exception:
+            pass
+
+    def toggleLineComment(self):
+        w = self._text_edit()
+        if w is None:
+            return
+        cursor = w.textCursor()
+        if not cursor.hasSelection():
+            cursor.select(QtGui.QTextCursor.LineUnderCursor)
+        start = cursor.selectionStart()
+        end = cursor.selectionEnd()
+        tc = QtGui.QTextCursor(w.document())
+        tc.setPosition(start)
+        # Iterate lines
+        block = w.document().findBlock(start)
+        last_block = w.document().findBlock(end)
+        # Determine if we should comment or uncomment (if all lines start with //)
+        all_commented = True
+        scan_block = block
+        while True:
+            text = scan_block.text().lstrip()
+            if not text.startswith('//'):
+                all_commented = False
+            if scan_block == last_block:
+                break
+            scan_block = scan_block.next()
+
+        w.blockSignals(True)
+        w.document().undoStack().beginMacro('Toggle Line Comment') if hasattr(w.document(), 'undoStack') else None
+        b = block
+        while True:
+            line_text = b.text()
+            leading_ws_len = len(line_text) - len(line_text.lstrip(' \t'))
+            leading = line_text[:leading_ws_len]
+            rest = line_text[leading_ws_len:]
+            if all_commented:
+                if rest.startswith('//'):
+                    new_line = leading + rest[2:]
+                else:
+                    new_line = line_text
+            else:
+                new_line = leading + '//' + rest
+            # replace the block text
+            c = QtGui.QTextCursor(b)
+            c.select(QtGui.QTextCursor.LineUnderCursor)
+            c.removeSelectedText()
+            c.insertText(new_line)
+            if b == last_block:
+                break
+            b = b.next()
+        if hasattr(w.document(), 'undoStack'):
+            try:
+                w.document().undoStack().endMacro()
+            except Exception:
+                pass
+        w.blockSignals(False)
+
+    def toggleBlockComment(self):
+        w = self._text_edit()
+        if w is None:
+            return
+        cursor = w.textCursor()
+        if not cursor.hasSelection():
+            return
+        sel_start = cursor.selectionStart()
+        sel_end = cursor.selectionEnd()
+        doc = w.document()
+        tc = QtGui.QTextCursor(doc)
+        tc.setPosition(sel_start)
+        tc.setPosition(sel_end, QtGui.QTextCursor.KeepAnchor)
+        selected_text = tc.selectedText()
+        # QTextCursor.selectedText replaces newlines with \u2029; convert back
+        selected_text = selected_text.replace('\u2029', '\n')
+        if selected_text.startswith('/*') and selected_text.endswith('*/'):
+            new_text = selected_text[2:-2]
+        else:
+            new_text = '/*' + selected_text + '*/'
+        tc.insertText(new_text)
+
+    # View actions implementations
+    def _setCopyButtonsVisible(self, visible):
+        try:
+            if hasattr(self, 'ui_out_btn') and self.ui_out_btn is not None:
+                self.ui_out_btn.setVisible(visible)
+        except Exception:
+            pass
+        try:
+            if hasattr(self, 'ui_update_btn') and self.ui_update_btn is not None:
+                self.ui_update_btn.setVisible(visible)
+        except Exception:
+            pass
+
+    def hideJsonCodeEditor(self):
+        try:
+            if hasattr(self, 'ui_view_edit') and self.ui_view_edit is not None:
+                self.ui_view_edit.hide()
+        except Exception:
+            pass
+        # Ensure UI (tree) editor stays visible
+        try:
+            if hasattr(self, 'ui_tree_view') and self.ui_tree_view is not None:
+                self.ui_tree_view.show()
+        except Exception:
+            pass
+        # Hide copy buttons as requested
+        self._setCopyButtonsVisible(False)
+
+    def hideJsonUiEditor(self):
+        try:
+            if hasattr(self, 'ui_tree_view') and self.ui_tree_view is not None:
+                self.ui_tree_view.hide()
+        except Exception:
+            pass
+        # Ensure Code editor stays visible
+        try:
+            if hasattr(self, 'ui_view_edit') and self.ui_view_edit is not None:
+                self.ui_view_edit.show()
+        except Exception:
+            pass
+        # Hide copy buttons as requested
+        self._setCopyButtonsVisible(False)
+
+    def showJsonEditors(self):
+        try:
+            if hasattr(self, 'ui_view_edit') and self.ui_view_edit is not None:
+                self.ui_view_edit.show()
+        except Exception:
+            pass
+        try:
+            if hasattr(self, 'ui_tree_view') and self.ui_tree_view is not None:
+                self.ui_tree_view.show()
+        except Exception:
+            pass
+        # Show buttons again when both editors are shown
+        self._setCopyButtonsVisible(True)
+
+    # Help menu handlers
+    def showAbout(self):
+        text = (
+            'JsonStudio\n\n'
+            'A Qt-based JSON viewer/editor.\n'
+            f'Python: {sys.version.split("\\n")[0]}\n'
+            f'Qt: {QtCore.qVersion()}\n'
+        )
+        try:
+            QtWidgets.QMessageBox.information(self, 'About JsonStudio', text)
+        except Exception:
+            pass
+
+    def showVersionNotes(self):
+        notes = (
+            'Version Notes\n\n'
+            '- JSON Schema validation support (requires jsonschema).\n'
+            '- Themes via .qss files and persistent selection.\n'
+            '- Raw View with syntax highlighting.\n'
+            '- Menus for File/Edit/View/Help.'
+        )
+        try:
+            QtWidgets.QMessageBox.information(self, 'Version Notes', notes)
+        except Exception:
+            pass
+
+    def createProblemReport(self):
+        try:
+            info = [
+                'Problem Report (copy below)',
+                '',
+                f'App: JsonStudio',
+                f'Python: {sys.version.split("\\n")[0]}',
+                f'Qt: {QtCore.qVersion()}',
+                f'OS: {platform.platform()}',
+                f'Arch: {platform.machine()}',
+                '',
+                'Describe the issue here:'
+            ]
+            text = '\n'.join(info)
+            # Copy to clipboard
+            try:
+                QtWidgets.QApplication.clipboard().setText(text)
+            except Exception:
+                pass
+            # Show editable dialog for user to add details
+            dlg = TextEditDialog(text=text, title='Create Problem Report')
+            try:
+                dlg.ui_textEdit.selectAll()
+            except Exception:
+                pass
+            dlg.show()
+        except Exception:
+            QtWidgets.QMessageBox.information(self, 'Create Problem Report', 'Unable to assemble problem report.')
+
+    def openSite(self):
+        try:
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl('https://github.com/oleitao'))
+        except Exception:
+            pass
+
     def _styles_in_ui(self):
         styles = {}
         ui_dir = os.path.join(MODULE_PATH, 'ui')
@@ -421,6 +896,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
 def show():
     global window
+    try:
+        QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_DontUseNativeMenuBar, True)
+    except Exception:
+        pass
     app = QtWidgets.QApplication(sys.argv)
     # Set application icon (taskbar/dock)
     try:
@@ -429,7 +908,12 @@ def show():
     except Exception:
         pass
     window = MainWindow()
-    window.show()
+    try:
+        if window.menuBar():
+            window.menuBar().setVisible(True)
+    except Exception:
+        pass
+    window.showMaximized()
     sys.exit(app.exec_())
 
 

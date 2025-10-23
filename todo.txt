@@ -1,62 +1,70 @@
-IDEIAS PARA UM IDE FOCO EM FICHEIROS JSON (.txt)
+IDEAS FOR AN IDE FOCUSED ON JSON FILES (.txt)
 
-=== Núcleo do Editor ===
-- Formatação e lint: prettifier configurável, deteção de chaves repetidas, trailing commas; suportar JSON, JSONC e JSON5.
-- Validação por schema: validação em tempo real via JSON Schema (drafts recentes), hover para erros, quick-fixes, resolução automática de $ref (local/remoto).
-- Vistas múltiplas sincronizadas: Texto ↔ Árvore (colapsável) ↔ Tabela (para arrays de objetos) ↔ Diff lado-a-lado.
-- Pesquisa e transformação: suporte a JSONPath e integração com jq com live preview.
-- Diff/Merge inteligente: comparação semântica “por chave” (não por linha), 3-way merge, deteção de nós movidos.
-- Gestão de ficheiros grandes: parsing incremental/streaming, carregamento parcial e virtual scrolling.
-- Autocompletar: sugestões com base no schema, snippets e geração automática de objetos válidos.
-- Histórico por nó: undo/redo escopado ao ramo alterado.
+=== Editor Core ===
 
-=== Qualidade de Vida ===
-- Deteção de secrets/PII: realce, redaction e avisos para chaves do tipo apiKey/password.
-- Templates & boilerplates: criação a partir de schema; catálogo (OpenAPI, package.json, tsconfig…).
-- Refactors: renomear chave globalmente, extrair subárvore para $ref, ordenar chaves com regras.
-- Validação cruzada: regras custom (ex.: “se type=A então fields deve conter X”).
-- Comentários: suporte a JSONC/JSON5 e preservação de comentários ao formatar.
-- Atalhos rápidos: duplicar nó, mover ↑↓, embrulhar em objeto/array, converter tipos (string⇄número⇄boolean).
+* [ ] Formatting and linting: configurable prettifier, duplicate key detection, trailing commas; support JSON, JSONC, and JSON5.
+* [ ] Schema-based validation: real-time validation via JSON Schema (recent drafts), hover to see errors, quick-fixes, automatic $ref resolution (local/remote).
+* [ ] Synchronized multiple views: Text ↔ Tree (collapsible) ↔ Table (for arrays of objects) ↔ Side-by-side diff.
+* [ ] Search & transform: JSONPath support and jq integration with live preview.
+* [ ] Smart diff/merge: semantic “by key” comparison (not line-based), 3-way merge, moved-node detection.
+* [ ] Large file handling: incremental/streaming parsing, partial loading, and virtual scrolling.
+* [ ] Autocomplete: schema-based suggestions, snippets, and automatic generation of valid objects.
+* [ ] Per-node history: undo/redo scoped to the modified branch.
 
-=== Visualização & Debugging ===
-- Estatísticas: contagens, tamanhos, distribuição de tipos, chaves mais frequentes.
-- Gráficos rápidos: barras/pizza a partir de arrays de objetos (ex.: status por contagem).
-- Mapa de calor: destacar nós alterados recentemente ou com erros.
-- Explorador de referências: navegar $id/$ref, “peek definition”.
+=== Quality of Life ===
 
-=== Integrações com APIs & Dev-Tools ===
-- Mock server: servidor local que responde conforme um JSON/Schema (latência e error rates simuláveis).
-- Testes de contratos: comparar payloads com schemas (OpenAPI/AsyncAPI/Avro) e gerar relatórios.
-- CLI embutida: executar jq, ajv, yq (para YAML⇄JSON), com “copy as command”.
-- Git integrado: blame por nó, inline diff, pre-commit hooks (lint/validate).
-- Conetores: S3/GCS, URLs remotos, workspaces com auto refresh.
+* [ ] Secret/PII detection: highlighting, redaction, and warnings for keys like apiKey/password.
+* [ ] Templates & boilerplates: create from schema; catalog (OpenAPI, package.json, tsconfig…).
+* [ ] Refactors: rename key globally, extract subtree into $ref, sort keys with rules.
+* [ ] Cross-validation: custom rules (e.g., “if type=A then fields must contain X”).
+* [ ] Comments: support JSONC/JSON5 and preserve comments on format.
+* [ ] Quick actions: duplicate node, move ↑↓, wrap in object/array, convert types (string⇄number⇄boolean).
 
-=== Experiências Avançadas ===
-- Inferência de schemas: gerar JSON Schema a partir de múltiplos exemplos (tolerante a variações).
-- Assistente de transformações: “explica/gera um jq para transformar A→B” (possível uso de IA).
-- Validação de segurança: limites de tamanho, chaves proibidas, detector de PII.
-- Localização: key maps para i18n (detetar chaves não traduzidas entre ficheiros).
+=== Visualization & Debugging ===
+
+* [ ] Statistics: counts, sizes, type distribution, most frequent keys.
+* [ ] Quick charts: bar/pie from arrays of objects (e.g., status by count).
+* [ ] Heatmap: highlight nodes recently changed or with errors.
+* [ ] Reference explorer: navigate $id/$ref, “peek definition”.
+
+=== Integrations with APIs & Dev Tools ===
+
+* [ ] Mock server: local server that responds according to a JSON/Schema (configurable latency and error rates).
+* [ ] Contract tests: compare payloads against schemas (OpenAPI/AsyncAPI/Avro) and generate reports.
+* [ ] Built-in CLI: run jq, ajv, yq (for YAML⇄JSON), with “copy as command”.
+* [ ] Integrated Git: per-node blame, inline diff, pre-commit hooks (lint/validate).
+* [ ] Connectors: S3/GCS, remote URLs, workspaces with auto refresh.
+
+=== Advanced Experiments ===
+
+* [ ] Schema inference: generate JSON Schema from multiple examples (tolerant to variations).
+* [ ] Transformation assistant: “explain/generate a jq to transform A→B” (possible AI use).
+* [ ] Security validation: size limits, banned keys, PII detector.
+* [ ] Localization: key maps for i18n (detect untranslated keys across files).
 
 === UX/UI ===
-- Comando global (⌘K): ações, chaves, paths, schemas.
-- Breadcrumbs: mostrar $.orders[12].items[3].price com clique para saltar.
-- Pins: fixar nós favoritos no topo.
-- Inspeção rápida: hover mostra amostras e metadados (tamanho bytes, profundidade).
-- Temas e acessibilidade: alto contraste, fontes mono configuráveis, RTL-ready.
 
-=== Arquitetura Sugerida ===
-- Desktop (cross-platform): Electron ou Tauri + Monaco Editor; validação com ajv; workers para parsing; Rust (Serde/Simdjson) via Tauri para ficheiros enormes.
-- Web: React + Monaco, ajv + json-source-map (mapa posição→nó), Web Workers para não bloquear a UI.
-- Back-end opcional: Node/Rust para comparações pesadas, armazenamento de schemas e auditorias.
+* [ ] Global command (⌘K): actions, keys, paths, schemas.
+* [ ] Breadcrumbs: show $.orders[12].items[3].price with click-to-jump.
+* [ ] Pins: pin favorite nodes at the top.
+* [ ] Quick inspection: hover shows samples and metadata (size in bytes, depth).
+* [ ] Themes & accessibility: high contrast, configurable mono fonts, RTL-ready.
 
-=== Roadmap Exemplo ===
-1) MVP (2–3 semanas): editor Monaco, formatação, vista árvore, validação AJV, abrir/guardar, JSONPath básico.
-2) Versão Pro: diff/merge por nó, jq integrado, autocompletar por schema, templates, Git.
-3) Versão Team: mock server, testes de contrato, conetores remotos, políticas de segurança, colaboração em tempo real (CRDTs).
+=== Suggested Architecture ===
 
-=== Extras para Brilhar ===
-- “Explain this error”: traduz mensagens de validação para linguagem natural e sugere correções.
-- Gerador de dados falsos: a partir do schema (faker/json-schema-faker) para testes.
-- Comandos rápidos “/”: /sort keys, /flatten, /dedupe, /to csv.
-- Exportações: CSV (com seleção de colunas), YAML, NDJSON, Parquet (via wasm/arrow).
+* [ ] Desktop (cross-platform): Electron or Tauri + Monaco Editor; validation with ajv; workers for parsing; Rust (Serde/Simdjson) via Tauri for huge files.
+* [ ] Web: React + Monaco, ajv + json-source-map (map position→node), Web Workers to keep the UI non-blocking.
+* [ ] Optional backend: Node/Rust for heavy comparisons, schema storage, and audits.
 
+=== Sample Roadmap ===
+
+1. MVP (2–3 weeks): Monaco editor, formatting, tree view, AJV validation, open/save, basic JSONPath.
+2. Pro version: per-node diff/merge, integrated jq, schema-based autocomplete, templates, Git.
+3. Team version: mock server, contract tests, remote connectors, security policies, real-time collaboration (CRDTs).
+
+=== Extras to Shine ===
+
+* [ ] “Explain this error”: translate validation messages into natural language and suggest fixes.
+* [ ] Fake data generator: from the schema (faker/json-schema-faker) for testing.
+* [ ] Quick “/” commands: /sort keys, /flatten, /dedupe, /to csv.
+* [ ] Exports: CSV (with column selection), YAML, NDJSON, Parquet (via wasm/arrow).

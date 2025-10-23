@@ -1,7 +1,7 @@
 """
 Minimal Qt compatibility shim to run with PyQt5.
 
-This provides the subset used by jsonStudio so we don't depend on the
+This provides the subset used by JsonStudio so we don't depend on the
 external 'Qt.py' package at build time.
 """
 

@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=jsonStudio
+Name=JsonStudio
 Comment=JSON editor and viewer (Qt)
 Exec=jsonstudio %F
 Icon=${SNAP}/meta/gui/logo.png

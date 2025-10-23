@@ -11,32 +11,22 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>jsonStudio</string>
+   <string>JsonStudio</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <layout class="QGridLayout" name="ui_grid_layout">
-      <item row="0" column="0">
-       <widget class="QLineEdit" name="ui_filter_edit">
-        <property name="font">
-         <font>
-          <family>Bahnschrift</family>
-          <pointsize>10</pointsize>
-         </font>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2" rowspan="2">
-       <widget class="QPlainTextEdit" name="ui_view_edit">
-        <property name="font">
-         <font>
-          <family>Bahnschrift</family>
-          <pointsize>10</pointsize>
-         </font>
-        </property>
-       </widget>
-      </item>
+     <item row="0" column="2" rowspan="2">
+      <widget class="QPlainTextEdit" name="ui_view_edit">
+       <property name="font">
+        <font>
+         <family>Bahnschrift</family>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+      </widget>
+     </item>
      <item row="1" column="1">
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <property name="rightMargin">
@@ -97,20 +87,7 @@
       </layout>
      </item>
      <item row="2" column="0" colspan="3">
-      <layout class="QHBoxLayout" name="ui_schema_layout">
-       <item>
-        <widget class="QPushButton" name="ui_load_json_btn">
-         <property name="font">
-          <font>
-           <family>Bahnschrift</family>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>Load JSON…</string>
-         </property>
-        </widget>
-       </item>
+     <layout class="QHBoxLayout" name="ui_schema_layout">
        <item>
        <widget class="QPushButton" name="ui_validate_btn">
          <property name="font">
