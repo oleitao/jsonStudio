@@ -2,7 +2,7 @@
 
 snapcraft login                 # autentica
 
-# on jsonStudio folder run follow comand: snapcraft --build-for=amd64
+# on JsonStudio folder run follow comand: snapcraft --build-for=amd64
 snapcraft pack --debug
 snapcraft --build-for=amd64
 

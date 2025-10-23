@@ -16,6 +16,8 @@ from qjsonview import QJsonView
 from qjsonmodel import QJsonModel
 from codeEditor.highlighter.jsonHighlight import JsonHighlighter
 from optionsDialog import OptionsDialog
+from textEditDialog import TextEditDialog
+import platform
 try:
     from Qt import QtPrintSupport
 except Exception:  # pragma: no cover
@@ -36,7 +38,7 @@ except Exception:  # pragma: no cover
         raise SchemaError('jsonschema not available')
 
 MODULE_PATH = os.path.dirname(os.path.abspath(__file__))
-UI_PATH = os.path.join(MODULE_PATH, 'ui', 'jsonStudio.ui')
+UI_PATH = os.path.join(MODULE_PATH, 'ui', 'JsonStudio.ui')
 TEST_DICT = {}
 STYLE_PREF_PATH = os.path.join(MODULE_PATH, 'ui', 'settings.json')
 
@@ -436,6 +438,25 @@ class MainWindow(QtWidgets.QMainWindow):
         show_both_action.triggered.connect(self.showJsonEditors)
         view_menu.addAction(show_both_action)
 
+        # Help menu (after View)
+        help_menu = menubar.addMenu('Help')
+
+        about_action = QtWidgets.QAction('About JsonStudio', self)
+        about_action.triggered.connect(self.showAbout)
+        help_menu.addAction(about_action)
+
+        version_notes_action = QtWidgets.QAction('Version Notes', self)
+        version_notes_action.triggered.connect(self.showVersionNotes)
+        help_menu.addAction(version_notes_action)
+
+        report_action = QtWidgets.QAction('Create Problem Report', self)
+        report_action.triggered.connect(self.createProblemReport)
+        help_menu.addAction(report_action)
+
+        site_action = QtWidgets.QAction('JsonStudio Site', self)
+        site_action.triggered.connect(self.openSite)
+        help_menu.addAction(site_action)
+
     def applyStyleFile(self, path, display_name=None):
         try:
             with open(path, 'r', encoding='utf-8') as f:
@@ -745,6 +766,67 @@ class MainWindow(QtWidgets.QMainWindow):
             pass
         # Show buttons again when both editors are shown
         self._setCopyButtonsVisible(True)
+
+    # Help menu handlers
+    def showAbout(self):
+        text = (
+            'JsonStudio\n\n'
+            'A Qt-based JSON viewer/editor.\n'
+            f'Python: {sys.version.split("\\n")[0]}\n'
+            f'Qt: {QtCore.qVersion()}\n'
+        )
+        try:
+            QtWidgets.QMessageBox.information(self, 'About JsonStudio', text)
+        except Exception:
+            pass
+
+    def showVersionNotes(self):
+        notes = (
+            'Version Notes\n\n'
+            '- JSON Schema validation support (requires jsonschema).\n'
+            '- Themes via .qss files and persistent selection.\n'
+            '- Raw View with syntax highlighting.\n'
+            '- Menus for File/Edit/View/Help.'
+        )
+        try:
+            QtWidgets.QMessageBox.information(self, 'Version Notes', notes)
+        except Exception:
+            pass
+
+    def createProblemReport(self):
+        try:
+            info = [
+                'Problem Report (copy below)',
+                '',
+                f'App: JsonStudio',
+                f'Python: {sys.version.split("\\n")[0]}',
+                f'Qt: {QtCore.qVersion()}',
+                f'OS: {platform.platform()}',
+                f'Arch: {platform.machine()}',
+                '',
+                'Describe the issue here:'
+            ]
+            text = '\n'.join(info)
+            # Copy to clipboard
+            try:
+                QtWidgets.QApplication.clipboard().setText(text)
+            except Exception:
+                pass
+            # Show editable dialog for user to add details
+            dlg = TextEditDialog(text=text, title='Create Problem Report')
+            try:
+                dlg.ui_textEdit.selectAll()
+            except Exception:
+                pass
+            dlg.show()
+        except Exception:
+            QtWidgets.QMessageBox.information(self, 'Create Problem Report', 'Unable to assemble problem report.')
+
+    def openSite(self):
+        try:
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl('https://github.com/oleitao'))
+        except Exception:
+            pass
 
     def _styles_in_ui(self):
         styles = {}
