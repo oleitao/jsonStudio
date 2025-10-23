@@ -258,6 +258,11 @@ class MainWindow(QtWidgets.QMainWindow):
             menubar = None
         if not menubar:
             return
+        # Show menubar inside window (helpful on macOS)
+        try:
+            menubar.setNativeMenuBar(False)
+        except Exception:
+            pass
 
         # File menu
         file_menu = menubar.addMenu('File')
@@ -268,6 +273,22 @@ class MainWindow(QtWidgets.QMainWindow):
             pass
         load_json_action.triggered.connect(self.loadJsonToRaw)
         file_menu.addAction(load_json_action)
+
+        options_action = QtWidgets.QAction('Options…', self)
+        try:
+            options_action.setShortcut(QtGui.QKeySequence.Preferences)
+        except Exception:
+            pass
+        options_action.triggered.connect(self.showOptions)
+        file_menu.addAction(options_action)
+
+        exit_action = QtWidgets.QAction('Exit', self)
+        try:
+            exit_action.setShortcut(QtGui.QKeySequence.Quit)
+        except Exception:
+            pass
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
 
         style_menu = menubar.addMenu('Style')
         themes_menu = style_menu.addMenu('Themes')
@@ -362,6 +383,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self._update_style_status_label('Default')
         self._save_style_selection({'kind': 'default'})
 
+    def showOptions(self):
+        try:
+            QtWidgets.QMessageBox.information(self, 'Options', 'Options dialog not implemented yet.')
+        except Exception:
+            pass
+
     def _styles_in_ui(self):
         styles = {}
         ui_dir = os.path.join(MODULE_PATH, 'ui')
@@ -423,8 +450,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
 def show():
     global window
+    try:
+        QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_DontUseNativeMenuBar, True)
+    except Exception:
+        pass
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
+    try:
+        if window.menuBar():
+            window.menuBar().setVisible(True)
+    except Exception:
+        pass
     window.show()
     sys.exit(app.exec_())
 
