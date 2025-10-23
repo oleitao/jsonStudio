@@ -421,6 +421,21 @@ class MainWindow(QtWidgets.QMainWindow):
         toggle_block_comment_action.triggered.connect(self.toggleBlockComment)
         edit_menu.addAction(toggle_block_comment_action)
 
+        # View menu (after Edit)
+        view_menu = menubar.addMenu('View')
+
+        hide_code_action = QtWidgets.QAction('Hide Json Code Editor', self)
+        hide_code_action.triggered.connect(self.hideJsonCodeEditor)
+        view_menu.addAction(hide_code_action)
+
+        hide_ui_action = QtWidgets.QAction('Hide Json UI Editor', self)
+        hide_ui_action.triggered.connect(self.hideJsonUiEditor)
+        view_menu.addAction(hide_ui_action)
+
+        show_both_action = QtWidgets.QAction('Show Json Code/UI Editors', self)
+        show_both_action.triggered.connect(self.showJsonEditors)
+        view_menu.addAction(show_both_action)
+
     def applyStyleFile(self, path, display_name=None):
         try:
             with open(path, 'r', encoding='utf-8') as f:
@@ -673,6 +688,63 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             new_text = '/*' + selected_text + '*/'
         tc.insertText(new_text)
+
+    # View actions implementations
+    def _setCopyButtonsVisible(self, visible):
+        try:
+            if hasattr(self, 'ui_out_btn') and self.ui_out_btn is not None:
+                self.ui_out_btn.setVisible(visible)
+        except Exception:
+            pass
+        try:
+            if hasattr(self, 'ui_update_btn') and self.ui_update_btn is not None:
+                self.ui_update_btn.setVisible(visible)
+        except Exception:
+            pass
+
+    def hideJsonCodeEditor(self):
+        try:
+            if hasattr(self, 'ui_view_edit') and self.ui_view_edit is not None:
+                self.ui_view_edit.hide()
+        except Exception:
+            pass
+        # Ensure UI (tree) editor stays visible
+        try:
+            if hasattr(self, 'ui_tree_view') and self.ui_tree_view is not None:
+                self.ui_tree_view.show()
+        except Exception:
+            pass
+        # Hide copy buttons as requested
+        self._setCopyButtonsVisible(False)
+
+    def hideJsonUiEditor(self):
+        try:
+            if hasattr(self, 'ui_tree_view') and self.ui_tree_view is not None:
+                self.ui_tree_view.hide()
+        except Exception:
+            pass
+        # Ensure Code editor stays visible
+        try:
+            if hasattr(self, 'ui_view_edit') and self.ui_view_edit is not None:
+                self.ui_view_edit.show()
+        except Exception:
+            pass
+        # Hide copy buttons as requested
+        self._setCopyButtonsVisible(False)
+
+    def showJsonEditors(self):
+        try:
+            if hasattr(self, 'ui_view_edit') and self.ui_view_edit is not None:
+                self.ui_view_edit.show()
+        except Exception:
+            pass
+        try:
+            if hasattr(self, 'ui_tree_view') and self.ui_tree_view is not None:
+                self.ui_tree_view.show()
+        except Exception:
+            pass
+        # Show buttons again when both editors are shown
+        self._setCopyButtonsVisible(True)
 
     def _styles_in_ui(self):
         styles = {}
