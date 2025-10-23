@@ -15,6 +15,7 @@ from qjsonnode import QJsonNode
 from qjsonview import QJsonView
 from qjsonmodel import QJsonModel
 from codeEditor.highlighter.jsonHighlight import JsonHighlighter
+from optionsDialog import OptionsDialog
 
 try:
     import jsonschema
@@ -52,6 +53,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._style_path = None
         self._current_builtin_style = 'Default'
         self._style_actions = []
+        # dialogs
+        self._options_dialog = None
 
         root = QJsonNode.load(TEST_DICT)
         self._model = QJsonModel(root, self)
@@ -384,10 +387,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self._save_style_selection({'kind': 'default'})
 
     def showOptions(self):
-        try:
-            QtWidgets.QMessageBox.information(self, 'Options', 'Options dialog not implemented yet.')
-        except Exception:
-            pass
+        if self._options_dialog is None:
+            try:
+                self._options_dialog = OptionsDialog(self)
+            except Exception:
+                self._options_dialog = None
+        if self._options_dialog is not None:
+            try:
+                self._options_dialog.show()
+                self._options_dialog.raise_()
+                self._options_dialog.activateWindow()
+            except Exception:
+                pass
 
     def _styles_in_ui(self):
         styles = {}
