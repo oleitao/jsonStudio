@@ -59,6 +59,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui_tree_view = QJsonView()
         self.ui_tree_view.setStyleSheet('QWidget{font: 10pt "Bahnschrift";}')
         self.ui_grid_layout.addWidget(self.ui_tree_view, 1, 0)
+        try:
+            self.ui_tree_view.fileDropped.connect(self._load_json_from_path)
+        except Exception:
+            pass
 
         # schema/state
         self._schema = None
@@ -108,6 +112,14 @@ class MainWindow(QtWidgets.QMainWindow):
         JsonHighlighter(self.ui_view_edit.document())
         try:
             self.ui_view_edit.setPlaceholderText('Paste or type JSON here…')
+        except Exception:
+            pass
+        try:
+            self.ui_view_edit.setAcceptDrops(True)
+            self.ui_view_edit.installEventFilter(self)
+            # Also filter the viewport for drag events (Qt sometimes delivers here)
+            if hasattr(self.ui_view_edit, 'viewport'):
+                self.ui_view_edit.viewport().installEventFilter(self)
         except Exception:
             pass
         # Build top menu bar for styles
@@ -172,7 +184,12 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         if not path:
             return
+        self._load_json_from_path(path)
 
+    def _load_json_from_path(self, path):
+        """Load JSON from a filesystem path into both editors (Raw + UI)."""
+        if not path:
+            return
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -180,18 +197,31 @@ class MainWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(self, 'Load Error', f'Failed to load JSON file:\n{e}')
             return
 
-        # Always present the selected JSON in the Raw View (data)
+
         try:
             self.ui_view_edit.setReadOnly(False)
         except Exception:
             pass
-        text = json.dumps(data, indent=4, sort_keys=True)
+        try:
+            text = json.dumps(data, indent=4, sort_keys=True)
+        except Exception:
+            text = str(data)
         self.ui_view_edit.setPlainText(text)
 
-        # Also set it as the active schema for validation
+        try:
+            root = QJsonNode.load(data)
+            self._model = QJsonModel(root, self)
+            self._proxyModel.setSourceModel(self._model)
+            self.ui_tree_view.setModel(self._proxyModel)
+        except Exception:
+            pass
+
         self._schema = data
         if hasattr(self, 'ui_schema_status_label'):
-            self.ui_schema_status_label.setText(f'Schema: {os.path.basename(path)}')
+            try:
+                self.ui_schema_status_label.setText(f'Schema: {os.path.basename(path)}')
+            except Exception:
+                pass
 
     def _get_current_json(self):
         """Parse current text view as JSON; fallback to tree if empty."""
@@ -203,6 +233,33 @@ class MainWindow(QtWidgets.QMainWindow):
                 raise ValueError(f'Invalid JSON in Raw View: {e}')
         # fallback to model
         return self.ui_tree_view.asDict(None)
+
+    def eventFilter(self, obj, event):
+        try:
+            edit = getattr(self, 'ui_view_edit', None)
+            if obj is edit or (edit is not None and obj is getattr(edit, 'viewport', lambda: None)()):
+                if event.type() == QtCore.QEvent.DragEnter:
+                    md = event.mimeData()
+                    if md and md.hasUrls():
+                        event.acceptProposedAction()
+                        return True
+                elif event.type() == QtCore.QEvent.DragMove:
+                    md = event.mimeData()
+                    if md and md.hasUrls():
+                        event.acceptProposedAction()
+                        return True
+                elif event.type() == QtCore.QEvent.Drop:
+                    md = event.mimeData()
+                    if md and md.hasUrls():
+                        for url in md.urls():
+                            if url.isLocalFile():
+                                self._load_json_from_path(url.toLocalFile())
+                                break
+                        event.acceptProposedAction()
+                        return True
+        except Exception:
+            pass
+        return super(MainWindow, self).eventFilter(obj, event)
 
     def validateJson(self):
         """Validate that the JSON (prefer Raw View) is a valid JSON Schema."""
