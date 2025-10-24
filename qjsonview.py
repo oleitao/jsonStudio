@@ -13,6 +13,7 @@ https://doc.qt.io/qt-5/qmouseevent.html#button
 
 
 import ast
+import os
 
 from Qt import QtWidgets, QtCore, QtGui
 
@@ -20,7 +21,8 @@ from qjsonnode import QJsonNode
 
 
 class QJsonView(QtWidgets.QTreeView):
-    fileDropped = QtCore.Signal(str)
+    # Emitted when a local file path is dropped onto the view (PyQt5)
+    fileDropped = QtCore.pyqtSignal(str)
     dragStartPosition = None
 
     def __init__(self):
@@ -151,7 +153,13 @@ class QJsonView(QtWidgets.QTreeView):
         Override: allow dragging only for certain drag object
         """
         data = event.mimeData()
-        if data.hasText() or data.hasUrls():
+        
+        # Accept text (internal), file URLs, or 'file://...' text
+        try:
+            text = data.text().strip() if data.hasText() else ''
+        except Exception:
+            text = ''
+        if data.hasUrls() or text.startswith('file://') or data.hasText() or data.hasUrls():
             event.acceptProposedAction()
 
     def dragMoveEvent(self, event):
@@ -159,7 +167,12 @@ class QJsonView(QtWidgets.QTreeView):
         Override: disable dropping to certain model index based on node type
         """
         data = event.mimeData()
-        if data.hasUrls():
+        # Allow file drops anywhere; skip index/type restriction
+        try:
+            text = data.text().strip() if data.hasText() else ''
+        except Exception:
+            text = ''
+        if data.hasUrls() or text.startswith('file://'):
             event.acceptProposedAction()
             return
         if data.hasText():
@@ -178,17 +191,34 @@ class QJsonView(QtWidgets.QTreeView):
         Override: customize drop behavior to move for internal drag & drop
         """
         data = event.mimeData()
+
+        # Handle OS file drop first
+        path = None
         if data.hasUrls():
             for url in data.urls():
                 if url.isLocalFile():
                     path = url.toLocalFile()
-                    try:
-                        self.fileDropped.emit(path)
-                    except Exception:
-                        pass
-                    event.acceptProposedAction()
-                    return
-                
+                    break
+        # Fallback: some sources send file URI as plain text
+        if path is None and data.hasText():
+            raw = data.text().strip()
+            first = raw.splitlines()[0] if '\n' in raw else raw
+            if first.startswith('file://'):
+                url = QtCore.QUrl(first)
+                if url.isLocalFile():
+                    path = url.toLocalFile()
+            elif os.path.exists(first):
+                path = first
+
+        if path:
+            try:
+                self.fileDropped.emit(path)
+            except Exception:
+                pass
+            event.acceptProposedAction()
+            return
+
+        # Fallback: internal text-based drag/drop
         dropIndex = self.indexAt(event.pos())
         dropIndex = self.model().mapToSource(dropIndex)
 

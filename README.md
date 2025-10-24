@@ -81,7 +81,7 @@ Alongside the tree, there’s a text editor with JSON syntax highlighting—the 
 
 - [] JSON text view with syntax highlighting
 - [x] JSON Schema support
-- [] File drag & drop
+- [X] File drag & drop
 - [x] Custom stylesheets
 - [ ] Scripting interface for modularity
 - [ ] Possible web deployment
@@ -158,3 +158,4 @@ Alongside the tree, there’s a text editor with JSON syntax highlighting—the 
 
 - [Model View Programming](https://github.com/leixingyu/model-view-tutorial)
 - [QJsonModel](https://github.com/dridk/QJsonModel)
+
