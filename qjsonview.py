@@ -20,6 +20,7 @@ from qjsonnode import QJsonNode
 
 
 class QJsonView(QtWidgets.QTreeView):
+    fileDropped = QtCore.Signal(str)
     dragStartPosition = None
 
     def __init__(self):
@@ -150,7 +151,7 @@ class QJsonView(QtWidgets.QTreeView):
         Override: allow dragging only for certain drag object
         """
         data = event.mimeData()
-        if data.hasText():
+        if data.hasText() or data.hasUrls():
             event.acceptProposedAction()
 
     def dragMoveEvent(self, event):
@@ -158,6 +159,9 @@ class QJsonView(QtWidgets.QTreeView):
         Override: disable dropping to certain model index based on node type
         """
         data = event.mimeData()
+        if data.hasUrls():
+            event.acceptProposedAction()
+            return
         if data.hasText():
             event.acceptProposedAction()
 
@@ -173,10 +177,21 @@ class QJsonView(QtWidgets.QTreeView):
         """
         Override: customize drop behavior to move for internal drag & drop
         """
+        data = event.mimeData()
+        if data.hasUrls():
+            for url in data.urls():
+                if url.isLocalFile():
+                    path = url.toLocalFile()
+                    try:
+                        self.fileDropped.emit(path)
+                    except Exception:
+                        pass
+                    event.acceptProposedAction()
+                    return
+                
         dropIndex = self.indexAt(event.pos())
         dropIndex = self.model().mapToSource(dropIndex)
 
-        data = event.mimeData()
         self.remove(self.getSelectedIndices())
         self.add(data.text(), dropIndex)
         event.acceptProposedAction()
