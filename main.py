@@ -15,6 +15,7 @@ from qjsonnode import QJsonNode
 from qjsonview import QJsonView
 from qjsonmodel import QJsonModel
 from codeEditor.highlighter.jsonHighlight import JsonHighlighter
+from findDialog import FindDialog
 from optionsDialog import OptionsDialog
 from textEditDialog import TextEditDialog
 import platform
@@ -615,13 +616,64 @@ class MainWindow(QtWidgets.QMainWindow):
         w = self._text_edit()
         if w is None:
             return
-        text, ok = QtWidgets.QInputDialog.getText(self, 'Find', 'Find what:')
-        if not ok or not text:
+        dlg = FindDialog(self)
+        if dlg.exec_() != QtWidgets.QDialog.Accepted:
             return
+        vals = dlg.values()
+
+        whole = vals.get('whole_word', False)
+        case = vals.get('match_case', False)
+        use_regex = vals.get('use_regex', False)
+
+        # Build flags for plain-text find
+        flags = QtGui.QTextDocument.FindFlags()
         try:
-            w.find(text)
+            if case:
+                flags |= QtGui.QTextDocument.FindCaseSensitively
+            if whole:
+                flags |= QtGui.QTextDocument.FindWholeWords
         except Exception:
             pass
+
+        found = False
+        if use_regex:
+            pattern = vals.get('regex') or ''
+            if not pattern:
+                return
+            # Attempt QRegExp first (widely supported), optionally wrap with word boundaries
+            try:
+                patt = pattern
+                if whole:
+                    if not patt.startswith(r"\b"):
+                        patt = r"\b" + patt
+                    if not patt.endswith(r"\b"):
+                        patt = patt + r"\b"
+                rx = QtCore.QRegExp(patt)
+                rx.setCaseSensitivity(QtCore.Qt.CaseSensitive if case else QtCore.Qt.CaseInsensitive)
+                # Some bindings accept flags with regex; try with and without
+                try:
+                    found = bool(w.find(rx, flags))
+                except Exception:
+                    found = bool(w.find(rx))
+            except Exception:
+                found = False
+        else:
+            text = vals.get('text') or ''
+            if not text:
+                return
+            try:
+                found = bool(w.find(text, flags))
+            except Exception:
+                try:
+                    found = bool(w.find(text))
+                except Exception:
+                    found = False
+
+        if not found:
+            try:
+                QtWidgets.QMessageBox.information(self, 'Find', 'No matches found.')
+            except Exception:
+                pass
 
     def editReplace(self):
         w = self._text_edit()
