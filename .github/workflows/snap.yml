@@ -12,24 +12,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write   # necessário para semantic-release criar GitHub Releases/tags
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
-
-      # Run semantic-release to calculate version and publish GitHub Release
-      - name: Setup Node.js (for semantic-release)
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      - name: Semantic Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release || echo "semantic-release skipped (no release or not configured)"
 
       - uses: snapcore/action-build@v1
         id: build
@@ -39,4 +26,4 @@ jobs:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         with:
           snap: ${{ steps.build.outputs.snap }}
-          release: stable,candidate,beta,edge
+          release: edge
