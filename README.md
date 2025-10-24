@@ -158,3 +158,4 @@ Alongside the tree, there’s a text editor with JSON syntax highlighting—the 
 
 - [Model View Programming](https://github.com/leixingyu/model-view-tutorial)
 - [QJsonModel](https://github.com/dridk/QJsonModel)
+
