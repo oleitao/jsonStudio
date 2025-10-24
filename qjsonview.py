@@ -153,12 +153,13 @@ class QJsonView(QtWidgets.QTreeView):
         Override: allow dragging only for certain drag object
         """
         data = event.mimeData()
+        
         # Accept text (internal), file URLs, or 'file://...' text
         try:
             text = data.text().strip() if data.hasText() else ''
         except Exception:
             text = ''
-        if data.hasUrls() or text.startswith('file://') or data.hasText():
+        if data.hasUrls() or text.startswith('file://') or data.hasText() or data.hasUrls():
             event.acceptProposedAction()
 
     def dragMoveEvent(self, event):

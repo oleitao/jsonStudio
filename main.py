@@ -65,7 +65,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui_tree_view = QJsonView()
         self.ui_tree_view.setStyleSheet('QWidget{font: 10pt "Bahnschrift";}')
         self.ui_grid_layout.addWidget(self.ui_tree_view, 1, 0)
-        # Accept file drops on the tree view
         try:
             self.ui_tree_view.fileDropped.connect(self._load_json_from_path)
         except Exception:
@@ -208,6 +207,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if fsize is not None and fsize > LARGE_FILE_BYTES:
             return self._load_large_file_preview(path, fsize)
 
+    def _load_json_from_path(self, path):
+        """Load JSON from a filesystem path into both editors (Raw + UI)."""
+        if not path:
+            return
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -215,15 +218,17 @@ class MainWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(self, 'Load Error', f'Failed to load JSON file:\n{e}')
             return
 
-        # Update Raw View
+
         try:
             self.ui_view_edit.setReadOnly(False)
         except Exception:
             pass
-        text = json.dumps(data, indent=4, sort_keys=True)
+        try:
+            text = json.dumps(data, indent=4, sort_keys=True)
+        except Exception:
+            text = str(data)
         self.ui_view_edit.setPlainText(text)
 
-        # Update model/tree
         try:
             root = QJsonNode.load(data)
             self._model = QJsonModel(root, self)
@@ -232,10 +237,12 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception:
             pass
 
-        # Update schema state/info
         self._schema = data
         if hasattr(self, 'ui_schema_status_label'):
-            self.ui_schema_status_label.setText(f'Schema: {os.path.basename(path)}')
+            try:
+                self.ui_schema_status_label.setText(f'Schema: {os.path.basename(path)}')
+            except Exception:
+                pass
 
     def _load_large_file_preview(self, path, fsize):
         """Preview mode for very large JSON files.
@@ -298,10 +305,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def eventFilter(self, obj, event):
         """Handle file drops onto Raw editor (code view)."""
+
         try:
             edit = getattr(self, 'ui_view_edit', None)
             viewport = edit.viewport() if edit and hasattr(edit, 'viewport') else None
-            if obj is edit or obj is viewport:
+            if obj is edit or (edit is not None and obj is getattr(edit, 'viewport', lambda: None)()):
                 if event.type() == QtCore.QEvent.DragEnter:
                     md = event.mimeData()
                     if md and md.hasUrls():
